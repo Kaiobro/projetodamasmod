@@ -1,0 +1,130 @@
+kaio, [30/01/2026 19:30]
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>CROSSFADE - Sincronizando Propósitos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:'Press Start 2P', cursive; color:#fff; }
+  
+  /* --- AVISO DE ROTAÇÃO SEM IMAGEM (APENAS CSS) --- */
+  #aviso-orientacao {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000; z-index: 9999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  
+  /* Desenho do telemóvel girando em CSS */
+  .phone-icon {
+    width: 50px; height: 90px; border: 3px solid #fff; border-radius: 6px;
+    position: relative; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out;
+  }
+  .phone-icon::after {
+    content: ''; position: absolute; bottom: 5px; left: 50%;
+    transform: translateX(-50%); width: 10px; height: 10px;
+    border: 2px solid #fff; border-radius: 50%;
+  }
+  @keyframes rotatePhone {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+    100% { transform: rotate(-90deg); }
+  }
+
+  /* Esconde o aviso quando o telemóvel está deitado */
+  @media (orientation: landscape) {
+    #aviso-orientacao { display: none; }
+  }
+
+  /* --- RESTO DO JOGO --- */
+  .fase { display:none; width:100vw; height:100vh; position:relative; }
+  .img-fundo { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; }
+  
+  .fala {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    background:#fff; color:#000; border:4px solid #000; padding:15px;
+    border-radius:10px; width:80%; max-width:500px; z-index:100;
+    cursor:pointer; text-align:center; font-size:10px; line-height:1.5;
+  }
+
+  .container-botoes { position:absolute; bottom:80px; width:100%; display:flex; justify-content:center; gap:50px; z-index:200; }
+  .btn-escolha { padding:15px; font-size:10px; cursor:pointer; border:3px solid #000; font-family:'Press Start 2P'; border-radius:8px; }
+  #btnSim { background:#00ff00; color:#000; }
+  #btnNao { background:#ff4757; color:#fff; position: absolute; }
+
+  canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:998; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<div id="aviso-orientacao">
+  <div class="phone-icon"></div>
+  <h2 style="font-size: 14px; margin: 10px;">GIRA O TELEMÓVEL</h2>
+  <p style="font-size: 8px; color: yellow;">O jogo só roda com o ecrã deitado</p>
+</div>
+
+<div id="telaContinuar" style="width:100vw; height:100vh; position:fixed; z-index:3000; cursor:pointer;" onclick="proximaFase(1)">
+  <img src="capa.png" class="img-fundo" style="opacity:0.6;">
+  <div style="position:relative; z-index:3001; text-align:center; top:50%; transform:translateY(-50%);">
+    <h1 style="font-size: 20px;">CROSSFADE</h1>
+    <p style="font-size: 10px; animation: pisca 1s infinite;">TOQUE PARA INICIAR ❤️</p>
+  </div>
+</div>
+
+<div id="fase1" class="fase">
+  <img src="mapa.inicial.png" class="img-fundo">
+  <div class="fala" onclick="proximaFase(2)">Bom ver você, Primeira dama! <br>Vamos começar? [Toque aqui]</div>
+</div>
+
+<div id="fase2" class="fase">
+  <img src="igreja.png" class="img-fundo">
+  <div class="fala" onclick="proximaFase(3)">Ainda bem que você chegou... <br>tava te esperando. [Toque aqui]</div>
+</div>
+
+<div id="fase5" class="fase">
+  <img src="final.png" class="img-fundo">
+  <div class="fala" style="bottom: 180px; cursor:default;">Aceita ser minha dupla na mídia e na vida? <br>Quer namorar comigo?</div>
+  <div class="container-botoes">
+    <button id="btnSim" onclick="vitoria()">SIM! ❤️</button>
+    <button id="btnNao" onmouseover="fugir()" ontouchstart="fugir()">NÃO!</button>
+  </div>
+</div>
+
+<audio id="musica" src="dragonball.mp3" loop></audio>
+<canvas id="fogosCanvas"></canvas>
+
+kaio, [30/01/2026 19:30]
+<script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.9.2/dist/index.umd.min.js"></script>
+<script>
+const musica = document.getElementById("musica");
+
+function proximaFase(num) {
+  document.getElementById("telaContinuar").style.display="none";
+  document.querySelectorAll('.fase').forEach(f => f.style.display = 'none');
+  
+  let alvo = num;
+  if(num === 3) alvo = 5; 
+
+  const prox = document.getElementById("fase"+alvo);
+  if(prox) prox.style.display="block";
+  if(num === 1) musica.play();
+}
+
+function fugir() {
+  const btn = document.getElementById("btnNao");
+  btn.style.left = Math.random() * (window.innerWidth - 120) + "px";
+  btn.style.top = Math.random() * (window.innerHeight - 100) + "px";
+}
+
+function vitoria() {
+  document.getElementById("btnNao").style.display = "none";
+  const container = document.getElementById("fogosCanvas");
+  const fireworks = new Fireworks.default(container, { autoresize: true, opacity: 0.9 });
+  fireworks.start();
+  alert("O CROSSFADE AGORA É ETERNO! ❤️ TE AMO!");
+}
+</script>
+</body>
+</html>
