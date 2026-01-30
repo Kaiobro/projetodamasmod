@@ -3,36 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Missão Especial: Primeira Dama</title>
+    <title>Crossfade - Sincronizando Propósitos</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; }
-        
-        /* Onde o joystick vai aparecer */
-        #joystick-zone {
-            position: fixed;
-            bottom: 50px;
-            left: 50px;
-            width: 150px;
-            height: 150px;
-            z-index: 1000;
-        }
-
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
+        #joystick-zone { position: fixed; bottom: 30px; left: 30px; width: 100px; height: 100px; z-index: 1000; }
         #papel-carta {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 280px; padding: 20px; background: #fdf5e6; border: 2px solid #d2b48c;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1001;
-            text-align: center; border-radius: 5px; font-style: italic;
+            width: 280px; padding: 20px; background: #fdf5e6; border: 3px solid #d2b48c;
+            display: none; z-index: 1001; text-align: center; border-radius: 10px; color: #5d4037;
         }
-
         #tela-final {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffc0cb; display: none; flex-direction: column;
+            background-color: #ffc0cb; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 2000;
         }
-        
-        .btn-final { padding: 15px 30px; font-size: 20px; border-radius: 10px; border: none; cursor: pointer; }
+        .btn-final { padding: 15px 30px; font-size: 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; }
         #btn-sim { background: #4caf50; color: white; }
         #btn-nao { background: #f44336; color: white; position: absolute; }
     </style>
@@ -40,17 +27,16 @@
 <body>
 
     <div id="joystick-zone"></div>
-
     <div id="papel-carta">
         <p id="texto-carta"></p>
-        <button onclick="fecharCarta()" style="cursor:pointer; padding: 10px;">Fechar Carta</button>
+        <button onclick="fecharCarta()" style="cursor:pointer; padding: 5px 15px;">Fechar</button>
     </div>
 
     <div id="tela-final">
-        <h1 id="frase-final" style="padding: 20px; text-align: center;"></h1>
+        <h2 id="frase-final" style="text-align: center; padding: 20px; color: #d32f2f;"></h2>
         <div style="position: relative; width: 100%; height: 300px; display: flex; justify-content: center; align-items: center;">
-            <button id="btn-sim" class="btn-final" onclick="aceitou()">SIM!</button>
-            <button id="btn-nao" class="btn-final" onmouseover="fugir()" ontouchstart="fugir()">NÃO</button>
+            <button id="btn-sim" class="btn-final" onclick="aceitou()">Sim, Claro!</button>
+            <button id="btn-nao" class="btn-final" onmouseover="fugir()" ontouchstart="fugir()">Nãoooo!</button>
         </div>
     </div>
 
@@ -65,122 +51,125 @@
     };
 
     const game = new Phaser.Game(config);
-    let player, cartas, igreja, portal, cursors;
-    let joystickData = { x: 0, y: 0 };
-    let contador = 0, fase = 'mapa';
-
-    const mensagens = [
-        "Carta 01: Deus preparou aquele nosso dia. Ainda bem que, entre tantos caminhos, o meu cruzou com o seu.",
-        "Carta 02: Eu estava meio desacreditado, mas você chegou e mudou tudo. Foi a luz que eu nem sabia que precisava.",
-        "Carta 03: Não muda nada em você. Eu curto até o que você acha que é defeito; seu jeito é o que te faz única.",
-        "Carta 04: Valeu cada oração. Ter você por perto me traz uma paz absurda. Você é minha melhor escolha.",
-        "Carta 05: Por você eu faço o impossível só pra te ver sorrir. Você é minha joia rara, minha 'Primeira Dama'."
-    ];
+    let player, cartas, igrejaObjeto, joystickData = { x: 0, y: 0 }, contador = 0, fase = 'capa';
+    let bg, vocal, pulpito, portal;
 
     function preload() {
-        this.load.image('chao', 'cenario.png');
-        this.load.image('boneco', 'kaio.png');
+        // NOMES DE ACORDO COM O SEU GITHUB
+        this.load.image('capa', 'capa.png'); 
+        this.load.image('mapa_img', 'mapa.png');
+        this.load.image('jogador', 'jogador.png'); 
+        this.load.image('kaio_img', 'kaio.png');
         this.load.image('carta_img', 'carta.png');
-        this.load.image('igreja_img', 'igreja.png');
+        this.load.image('atmosfera', 'atmosfera.png');
         this.load.image('vocal_img', 'vocal.png');
         this.load.image('pulpito_img', 'pulpito.png');
-        this.load.image('portal_img', 'portal.png');
+        this.load.image('paisagem', 'paisagem.png');
     }
 
-kaio, [30/01/2026 20:31]
-function create() {
-        this.add.image(400, 300, 'chao').setScale(2);
-        igreja = this.physics.add.staticImage(window.innerWidth - 100, 150, 'igreja_img');
-        player = this.physics.add.sprite(100, 400, 'boneco').setCollideWorldBounds(true);
-        
-        cartas = this.physics.add.group();
+    function create() {
+        bg = this.add.image(window.innerWidth/2, window.innerHeight/2, 'capa').setInteractive();
+        bg.setDisplaySize(window.innerWidth, window.innerHeight);
+
+        // Clique inicial na capa
+        bg.on('pointerdown', () => {
+            if(fase === 'capa') iniciarMapa(this);
+        });
+
+        const joystick = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static', position: { left: '75px', bottom: '75px' }, color: 'white'
+        });
+        joystick.on('move', (evt, data) => { joystickData.x = data.vector.x; joystickData.y = -data.vector.y; });
+        joystick.on('end', () => { joystickData.x = 0; joystickData.y = 0; });
+    }
+
+kaio, [30/01/2026 20:41]
+function iniciarMapa(scene) {
+        fase = 'mapa';
+        bg.setTexture('mapa_img');
+        alert("Bom ver você, Primeira dama! Vamos começar.");
+        alert("Espalhei 5 cartas. Ache todas e me encontre na igreja.");
+
+        player = scene.physics.add.sprite(100, window.innerHeight - 100, 'jogador').setScale(1.5);
+        player.setCollideWorldBounds(true);
+
+        // Representação invisível da igreja no mapa
+        igrejaObjeto = scene.add.rectangle(window.innerWidth - 100, 150, 100, 100);
+        scene.physics.add.existing(igrejaObjeto, true);
+
+        cartas = scene.physics.add.group();
+        const mensagens = [
+            "Carta 01: Deus preparou aquele nosso dia. Ainda bem que meu caminho cruzou com o seu.",
+            "Carta 02: Eu estava desacreditado, mas você chegou e mudou tudo.",
+            "Carta 03: Não muda nada em você. Seu jeito é o que te faz única.",
+            "Carta 04: Valeu cada oração. Ter você por perto me traz uma paz absurda.",
+            "Carta 05: Por você eu faço o impossível. Você é minha 'Primeira Dama'."
+        ];
+
         for(let i=0; i<5; i++) {
-            let c = cartas.create(Phaser.Math.Between(100, window.innerWidth - 100), Phaser.Math.Between(100, window.innerHeight - 100), 'carta_img');
+            let c = cartas.create(Phaser.Math.Between(50, window.innerWidth-50), Phaser.Math.Between(150, window.innerHeight-50), 'carta_img');
             c.msg = mensagens[i];
+            c.setScale(0.5);
         }
 
-        this.physics.add.overlap(player, cartas, (p, c) => {
+        scene.physics.add.overlap(player, cartas, (p, c) => {
             document.getElementById('texto-carta').innerText = c.msg;
             document.getElementById('papel-carta').style.display = 'block';
             c.destroy();
             contador++;
+            if(contador === 5) alert("Mandou bem! Me encontra na igreja.");
         });
 
-        this.physics.add.overlap(player, igreja, () => {
-            if(contador === 5 && fase === 'mapa') iniciarIgreja(this);
+        scene.physics.add.overlap(player, igrejaObjeto, () => {
+            if(contador >= 5 && fase === 'mapa') iniciarIgreja(scene);
         });
+    }
 
-        // CONFIGURAÇÃO DO ANALÓGICO
-        const joystick = nipplejs.create({
-            zone: document.getElementById('joystick-zone'),
-            mode: 'static',
-            position: { left: '75px', bottom: '75px' },
-            color: 'white'
-        });
+    function iniciarIgreja(scene) {
+        fase = 'igreja';
+        player.setPosition(window.innerWidth/2, window.innerHeight - 100);
+        bg.setTexture('atmosfera');
+        
+        vocal = scene.add.image(window.innerWidth/2, 200, 'vocal_img').setScale(1.2);
+        pulpito = scene.add.image(window.innerWidth/2, 280, 'pulpito_img');
+        let kaio = scene.add.image(window.innerWidth/2 - 100, window.innerHeight - 150, 'kaio_img');
 
-        joystick.on('move', (evt, data) => {
-            if (data.vector) {
-                joystickData.x = data.vector.x;
-                joystickData.y = -data.vector.y;
-            }
-        });
+        alert("Ainda bem que você chegou... tava te esperando.");
+        alert("Preciso de ajuda para o registro do culto. Segura o estabilizador?");
+        alert("Tira 3 fotos do vocal e um vídeo de 5 segundos.");
 
-        joystick.on('end', () => {
-            joystickData.x = 0;
-            joystickData.y = 0;
-        });
+        setTimeout(() => {
+            alert("Pronto, perfeito! Conseguiu registrar tudo.");
+            alert("Agora vem cá... essa aqui é a nossa última missão.");
+            iniciarPortal(scene);
+        }, 8000);
+    }
 
-        cursors = this.input.keyboard.createCursorKeys();
-        alert("Bom ver você, Primeira dama! Use o analógico para pegar as 5 cartas.");
+    function iniciarPortal(scene) {
+        fase = 'final';
+        bg.setTexture('paisagem');
+        vocal.destroy();
+        pulpito.destroy();
+        document.getElementById('tela-final').style.display = 'flex';
+        document.getElementById('frase-final').innerText = "A real é que você supera tudo o que eu um dia sonhei. Não quero que você seja só uma fase, quero você no meu presente.\nAceita ser minha dupla na mídia e na vida?\nQuer namorar comigo?";
     }
 
     function update() {
-        player.setVelocity(0);
-        
-        // Movimento pelo teclado
-        if (cursors.left.isDown) player.setVelocityX(-200);
-        else if (cursors.right.isDown) player.setVelocityX(200);
-        if (cursors.up.isDown) player.setVelocityY(-200);
-        else if (cursors.down.isDown) player.setVelocityY(200);
-
-        // Movimento pelo Analógico
-        if (joystickData.x !== 0 || joystickData.y !== 0) {
-            player.setVelocityX(joystickData.x * 250);
-            player.setVelocityY(joystickData.y * 250);
+        if(player && player.body) {
+            player.setVelocity(joystickData.x * 200, joystickData.y * 200);
         }
     }
 
     function fecharCarta() { document.getElementById('papel-carta').style.display = 'none'; }
-
-    function iniciarIgreja(scene) {
-        fase = 'igreja';
-        alert("Ainda bem que você chegou...");
-        scene.add.image(400, 200, 'vocal_img');
-        scene.add.image(400, 250, 'pulpito_img');
-        
-        setTimeout(() => {
-            portal = scene.physics.add.sprite(400, 400, 'portal_img');
-            scene.physics.add.overlap(player, portal, () => iniciarFinal());
-        }, 5000);
-    }
-
-    function iniciarFinal() {
-        document.getElementById('tela-final').style.display = 'flex';
-        document.getElementById('frase-final').innerText = "A real é que você supera tudo o que eu um dia sonhei. ACEITA NAMORAR COMIGO?";
-    }
-
     function fugir() {
         let btn = document.getElementById('btn-nao');
-        btn.style.left = Math.random() * 70 + "%";
-        btn.style.top = Math.random() * 70 + "%";
+        btn.style.left = Math.random() * 60 + 20 + "%";
+        btn.style.top = Math.random() * 60 + 20 + "%";
     }
-
     function aceitou() {
-        document.body.innerHTML = 
-            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:white; text-align:center;">
-                <h1 style="font-size:2.5rem;">🎆 Minha melhor escolha, meu presente de Deus! ❤️ 🎆</h1>
-            </div>
-        ;
+        alert("ELA DISSE SIM! ❤️");
+        document.body.innerHTML = "<div style='background:black; height:100vh; display:flex; align-items:center; justify-content:center;'><h1 style='color:white; text-align:center;'>💍 MINHA MELHOR ESCOLHA! ❤️</h1></div>";
     }
     </script>
 </body>
