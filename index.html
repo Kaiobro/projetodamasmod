@@ -1,130 +1,187 @@
-kaio, [30/01/2026 19:30]
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>CROSSFADE - Sincronizando Propósitos</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Missão Especial: Primeira Dama</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial', sans-serif; }
+        
+        /* Onde o joystick vai aparecer */
+        #joystick-zone {
+            position: fixed;
+            bottom: 50px;
+            left: 50px;
+            width: 150px;
+            height: 150px;
+            z-index: 1000;
+        }
 
-  body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; font-family:'Press Start 2P', cursive; color:#fff; }
-  
-  /* --- AVISO DE ROTAÇÃO SEM IMAGEM (APENAS CSS) --- */
-  #aviso-orientacao {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #000; z-index: 9999; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; text-align: center;
-  }
-  
-  /* Desenho do telemóvel girando em CSS */
-  .phone-icon {
-    width: 50px; height: 90px; border: 3px solid #fff; border-radius: 6px;
-    position: relative; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out;
-  }
-  .phone-icon::after {
-    content: ''; position: absolute; bottom: 5px; left: 50%;
-    transform: translateX(-50%); width: 10px; height: 10px;
-    border: 2px solid #fff; border-radius: 50%;
-  }
-  @keyframes rotatePhone {
-    0% { transform: rotate(0deg); }
-    50% { transform: rotate(-90deg); }
-    100% { transform: rotate(-90deg); }
-  }
+        #papel-carta {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 280px; padding: 20px; background: #fdf5e6; border: 2px solid #d2b48c;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5); display: none; z-index: 1001;
+            text-align: center; border-radius: 5px; font-style: italic;
+        }
 
-  /* Esconde o aviso quando o telemóvel está deitado */
-  @media (orientation: landscape) {
-    #aviso-orientacao { display: none; }
-  }
-
-  /* --- RESTO DO JOGO --- */
-  .fase { display:none; width:100vw; height:100vh; position:relative; }
-  .img-fundo { width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; }
-  
-  .fala {
-    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-    background:#fff; color:#000; border:4px solid #000; padding:15px;
-    border-radius:10px; width:80%; max-width:500px; z-index:100;
-    cursor:pointer; text-align:center; font-size:10px; line-height:1.5;
-  }
-
-  .container-botoes { position:absolute; bottom:80px; width:100%; display:flex; justify-content:center; gap:50px; z-index:200; }
-  .btn-escolha { padding:15px; font-size:10px; cursor:pointer; border:3px solid #000; font-family:'Press Start 2P'; border-radius:8px; }
-  #btnSim { background:#00ff00; color:#000; }
-  #btnNao { background:#ff4757; color:#fff; position: absolute; }
-
-  canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:998; pointer-events:none; }
-</style>
+        #tela-final {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffc0cb; display: none; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 2000;
+        }
+        
+        .btn-final { padding: 15px 30px; font-size: 20px; border-radius: 10px; border: none; cursor: pointer; }
+        #btn-sim { background: #4caf50; color: white; }
+        #btn-nao { background: #f44336; color: white; position: absolute; }
+    </style>
 </head>
 <body>
 
-<div id="aviso-orientacao">
-  <div class="phone-icon"></div>
-  <h2 style="font-size: 14px; margin: 10px;">GIRA O TELEMÓVEL</h2>
-  <p style="font-size: 8px; color: yellow;">O jogo só roda com o ecrã deitado</p>
-</div>
+    <div id="joystick-zone"></div>
 
-<div id="telaContinuar" style="width:100vw; height:100vh; position:fixed; z-index:3000; cursor:pointer;" onclick="proximaFase(1)">
-  <img src="capa.png" class="img-fundo" style="opacity:0.6;">
-  <div style="position:relative; z-index:3001; text-align:center; top:50%; transform:translateY(-50%);">
-    <h1 style="font-size: 20px;">CROSSFADE</h1>
-    <p style="font-size: 10px; animation: pisca 1s infinite;">TOQUE PARA INICIAR ❤️</p>
-  </div>
-</div>
+    <div id="papel-carta">
+        <p id="texto-carta"></p>
+        <button onclick="fecharCarta()" style="cursor:pointer; padding: 10px;">Fechar Carta</button>
+    </div>
 
-<div id="fase1" class="fase">
-  <img src="mapa.inicial.png" class="img-fundo">
-  <div class="fala" onclick="proximaFase(2)">Bom ver você, Primeira dama! <br>Vamos começar? [Toque aqui]</div>
-</div>
+    <div id="tela-final">
+        <h1 id="frase-final" style="padding: 20px; text-align: center;"></h1>
+        <div style="position: relative; width: 100%; height: 300px; display: flex; justify-content: center; align-items: center;">
+            <button id="btn-sim" class="btn-final" onclick="aceitou()">SIM!</button>
+            <button id="btn-nao" class="btn-final" onmouseover="fugir()" ontouchstart="fugir()">NÃO</button>
+        </div>
+    </div>
 
-<div id="fase2" class="fase">
-  <img src="igreja.png" class="img-fundo">
-  <div class="fala" onclick="proximaFase(3)">Ainda bem que você chegou... <br>tava te esperando. [Toque aqui]</div>
-</div>
+    <script>
+    const config = {
+        type: Phaser.AUTO,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        parent: 'game-container',
+        physics: { default: 'arcade' },
+        scene: { preload: preload, create: create, update: update }
+    };
 
-<div id="fase5" class="fase">
-  <img src="final.png" class="img-fundo">
-  <div class="fala" style="bottom: 180px; cursor:default;">Aceita ser minha dupla na mídia e na vida? <br>Quer namorar comigo?</div>
-  <div class="container-botoes">
-    <button id="btnSim" onclick="vitoria()">SIM! ❤️</button>
-    <button id="btnNao" onmouseover="fugir()" ontouchstart="fugir()">NÃO!</button>
-  </div>
-</div>
+    const game = new Phaser.Game(config);
+    let player, cartas, igreja, portal, cursors;
+    let joystickData = { x: 0, y: 0 };
+    let contador = 0, fase = 'mapa';
 
-<audio id="musica" src="dragonball.mp3" loop></audio>
-<canvas id="fogosCanvas"></canvas>
+    const mensagens = [
+        "Carta 01: Deus preparou aquele nosso dia. Ainda bem que, entre tantos caminhos, o meu cruzou com o seu.",
+        "Carta 02: Eu estava meio desacreditado, mas você chegou e mudou tudo. Foi a luz que eu nem sabia que precisava.",
+        "Carta 03: Não muda nada em você. Eu curto até o que você acha que é defeito; seu jeito é o que te faz única.",
+        "Carta 04: Valeu cada oração. Ter você por perto me traz uma paz absurda. Você é minha melhor escolha.",
+        "Carta 05: Por você eu faço o impossível só pra te ver sorrir. Você é minha joia rara, minha 'Primeira Dama'."
+    ];
 
-kaio, [30/01/2026 19:30]
-<script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.9.2/dist/index.umd.min.js"></script>
-<script>
-const musica = document.getElementById("musica");
+    function preload() {
+        this.load.image('chao', 'cenario.png');
+        this.load.image('boneco', 'kaio.png');
+        this.load.image('carta_img', 'carta.png');
+        this.load.image('igreja_img', 'igreja.png');
+        this.load.image('vocal_img', 'vocal.png');
+        this.load.image('pulpito_img', 'pulpito.png');
+        this.load.image('portal_img', 'portal.png');
+    }
 
-function proximaFase(num) {
-  document.getElementById("telaContinuar").style.display="none";
-  document.querySelectorAll('.fase').forEach(f => f.style.display = 'none');
-  
-  let alvo = num;
-  if(num === 3) alvo = 5; 
+kaio, [30/01/2026 20:31]
+function create() {
+        this.add.image(400, 300, 'chao').setScale(2);
+        igreja = this.physics.add.staticImage(window.innerWidth - 100, 150, 'igreja_img');
+        player = this.physics.add.sprite(100, 400, 'boneco').setCollideWorldBounds(true);
+        
+        cartas = this.physics.add.group();
+        for(let i=0; i<5; i++) {
+            let c = cartas.create(Phaser.Math.Between(100, window.innerWidth - 100), Phaser.Math.Between(100, window.innerHeight - 100), 'carta_img');
+            c.msg = mensagens[i];
+        }
 
-  const prox = document.getElementById("fase"+alvo);
-  if(prox) prox.style.display="block";
-  if(num === 1) musica.play();
-}
+        this.physics.add.overlap(player, cartas, (p, c) => {
+            document.getElementById('texto-carta').innerText = c.msg;
+            document.getElementById('papel-carta').style.display = 'block';
+            c.destroy();
+            contador++;
+        });
 
-function fugir() {
-  const btn = document.getElementById("btnNao");
-  btn.style.left = Math.random() * (window.innerWidth - 120) + "px";
-  btn.style.top = Math.random() * (window.innerHeight - 100) + "px";
-}
+        this.physics.add.overlap(player, igreja, () => {
+            if(contador === 5 && fase === 'mapa') iniciarIgreja(this);
+        });
 
-function vitoria() {
-  document.getElementById("btnNao").style.display = "none";
-  const container = document.getElementById("fogosCanvas");
-  const fireworks = new Fireworks.default(container, { autoresize: true, opacity: 0.9 });
-  fireworks.start();
-  alert("O CROSSFADE AGORA É ETERNO! ❤️ TE AMO!");
-}
-</script>
+        // CONFIGURAÇÃO DO ANALÓGICO
+        const joystick = nipplejs.create({
+            zone: document.getElementById('joystick-zone'),
+            mode: 'static',
+            position: { left: '75px', bottom: '75px' },
+            color: 'white'
+        });
+
+        joystick.on('move', (evt, data) => {
+            if (data.vector) {
+                joystickData.x = data.vector.x;
+                joystickData.y = -data.vector.y;
+            }
+        });
+
+        joystick.on('end', () => {
+            joystickData.x = 0;
+            joystickData.y = 0;
+        });
+
+        cursors = this.input.keyboard.createCursorKeys();
+        alert("Bom ver você, Primeira dama! Use o analógico para pegar as 5 cartas.");
+    }
+
+    function update() {
+        player.setVelocity(0);
+        
+        // Movimento pelo teclado
+        if (cursors.left.isDown) player.setVelocityX(-200);
+        else if (cursors.right.isDown) player.setVelocityX(200);
+        if (cursors.up.isDown) player.setVelocityY(-200);
+        else if (cursors.down.isDown) player.setVelocityY(200);
+
+        // Movimento pelo Analógico
+        if (joystickData.x !== 0 || joystickData.y !== 0) {
+            player.setVelocityX(joystickData.x * 250);
+            player.setVelocityY(joystickData.y * 250);
+        }
+    }
+
+    function fecharCarta() { document.getElementById('papel-carta').style.display = 'none'; }
+
+    function iniciarIgreja(scene) {
+        fase = 'igreja';
+        alert("Ainda bem que você chegou...");
+        scene.add.image(400, 200, 'vocal_img');
+        scene.add.image(400, 250, 'pulpito_img');
+        
+        setTimeout(() => {
+            portal = scene.physics.add.sprite(400, 400, 'portal_img');
+            scene.physics.add.overlap(player, portal, () => iniciarFinal());
+        }, 5000);
+    }
+
+    function iniciarFinal() {
+        document.getElementById('tela-final').style.display = 'flex';
+        document.getElementById('frase-final').innerText = "A real é que você supera tudo o que eu um dia sonhei. ACEITA NAMORAR COMIGO?";
+    }
+
+    function fugir() {
+        let btn = document.getElementById('btn-nao');
+        btn.style.left = Math.random() * 70 + "%";
+        btn.style.top = Math.random() * 70 + "%";
+    }
+
+    function aceitou() {
+        document.body.innerHTML = 
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:black; color:white; text-align:center;">
+                <h1 style="font-size:2.5rem;">🎆 Minha melhor escolha, meu presente de Deus! ❤️ 🎆</h1>
+            </div>
+        ;
+    }
+    </script>
 </body>
 </html>
