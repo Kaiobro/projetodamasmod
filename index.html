@@ -3,84 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Crossfade - Sincronizando Propósitos</title>
+    <title>Crossfade Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        #game-container { width: 100vw; height: 100vh; }
-        #joystick-zone { position: fixed; bottom: 40px; left: 40px; width: 120px; height: 120px; z-index: 1000; }
-        #papel-carta {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 260px; padding: 20px; background: #fdf5e6; border: 2px solid #d2b48c;
-            display: none; z-index: 1001; text-align: center; border-radius: 10px;
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
+        #joystick-zone { 
+            position: fixed; bottom: 50px; left: 50px; 
+            width: 120px; height: 120px; z-index: 1000; 
+            display: none; 
         }
     </style>
 </head>
 <body>
     <div id="joystick-zone"></div>
-    <div id="game-container"></div>
-    <div id="papel-carta">
-        <p id="texto-carta"></p>
-        <button onclick="document.getElementById('papel-carta').style.display='none'">Fechar</button>
-    </div>
 
     <script>
     const config = {
-        type: Phaser.AUTO,
-        parent: 'game-container',
+        type: Phaser.AUTO, // Detecta se o celular usa WebGL (mais rápido) ou Canvas
         scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-        width: 800, height: 600,
-        physics: { default: 'arcade' },
+        width: 1280, height: 720,
+        physics: { 
+            default: 'arcade', 
+            arcade: { gravity: { y: 0 }, debug: false } 
+        },
         scene: { preload: preload, create: create, update: update }
     };
 
     const game = new Phaser.Game(config);
-    let player, joystickData = { x: 0, y: 0 }, fase = 'capa';
+    let player, barreiras, bg, joystickData = { x: 0, y: 0 }, fase = 'capa';
 
     function preload() {
-        // Nomes exatos da sua pasta no GitHub
+        // Carregamento de ativos na memória antes de começar
         this.load.image('capa', 'capa.png');
         this.load.image('mapa', 'mapa.png');
         this.load.image('jogador', 'jogador.png');
         this.load.image('carta', 'carta.png');
-        this.load.image('atmosfera', 'atmosfera.png');
     }
 
     function create() {
-        // Fundo inicial
-        let bg = this.add.image(400, 300, 'capa').setInteractive();
-        bg.setDisplaySize(800, 600);
+        // Camada 1: Cenário
+        bg = this.add.image(640, 360, 'capa').setInteractive();
 
-        // Boneco (jogador.png)
-        player = this.physics.add.sprite(400, 300, 'jogador').setVisible(false);
-        player.setCollideWorldBounds(true);
+        // Camada 2: Barreiras Físicas (Onde o boneco bate e para)
+        barreiras = this.physics.add.staticGroup();
+        // Exemplo de barreira na Escola (Ajuste as coordenadas conforme seu mapa)
+        barreiras.add(this.add.rectangle(500, 200, 150, 150)); 
+        barreiras.getChildren().forEach(b => b.setVisible(false));
 
-        // Ao clicar na capa, o jogo começa
+        // Camada 3: Jogador (Com física de colisão)
+        player = this.physics.add.sprite(640, 500, 'jogador').setScale(0.7).setVisible(false);
+        player.setCollideWorldBounds(true); // Não deixa sair da tela
+        
+        // Ativa a "batida" entre jogador e parede
+        this.physics.add.collider(player, barreiras);
+
+        // Início por clique (padrão de jogos mobile)
         bg.on('pointerdown', () => {
             if(fase === 'capa') {
-                fase = 'mapa';
-                bg.setTexture('mapa');
-                player.setVisible(true);
-                alert("Missão Iniciada! Use o analógico para coletar as cartas.");
+                alert("O jogo vai começar!");
+                iniciarGameplay(this);
             }
         });
+    }
 
-        // Joystick NippleJS
-        const manager = nipplejs.create({
-            zone: document.getElementById('joystick-zone'),
-            mode: 'static', position: { left: '60px', bottom: '60px' }, color: 'white'
+    function iniciarGameplay(scene) {
+        fase = 'mapa';
+        bg.setTexture('mapa');
+        player.setVisible(true);
+        document.getElementById('joystick-zone').style.display = 'block';
+
+        // Inicializa o Joystick
+        const options = { zone: document.getElementById('joystick-zone'), mode: 'static', position: { left: '60px', bottom: '60px' } };
+        const manager = nipplejs.create(options);
+        
+        manager.on('move', (evt, data) => {
+            const speed = 300;
+            joystickData.x = data.vector.x * speed;
+            joystickData.y = -data.vector.y * speed;
         });
-        manager.on('move', (evt, data) => { 
-            joystickData.x = data.vector.x; 
-            joystickData.y = -data.vector.y; 
-        });
+        
         manager.on('end', () => { joystickData.x = 0; joystickData.y = 0; });
     }
 
     function update() {
-        if(player.visible) {
-            player.body.setVelocity(joystickData.x * 250, joystickData.y * 250);
+        // Este é o loop do jogo. Roda 60x por segundo.
+        if(player.visible && player.body) {
+            player.body.setVelocity(joystickData.x, joystickData.y);
+            
+            // Lógica de animação simples (opcional)
+            if (joystickData.x > 0) player.setFlipX(false);
+            else if (joystickData.x < 0) player.setFlipX(true);
         }
     }
     </script>
